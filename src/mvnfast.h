@@ -5,7 +5,7 @@
 #include "boost/boost_normal.hpp"
 #include "sitmo/sitmo.hpp"
 
-#ifdef SUPPORT_OPENMP
+#ifdef _OPENMP
 #include <omp.h>
 #endif
 

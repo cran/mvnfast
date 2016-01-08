@@ -1,8 +1,6 @@
-
 ## ----setup, include=FALSE------------------------------------------------
 library(knitr)
 opts_chunk$set(out.extra='style="display:block; margin: auto"', fig.align="center", tidy=FALSE)
-
 
 ## ----rmvn----------------------------------------------------------------
 library("microbenchmark")
@@ -23,7 +21,6 @@ microbenchmark(rmvn(N, mu, mcov, ncores = 2),
                rmvnorm(N, mu, mcov),
                mvrnorm(N, mu, mcov))
 
-
 ## ----dmvn----------------------------------------------------------------
 # Generating random vectors 
 N <- 10000
@@ -36,7 +33,6 @@ X <- rmvn(N, mu, mcov)
 microbenchmark(dmvn(X, mu, mcov, ncores = 2),
                dmvn(X, mu, mcov),
                dmvnorm(X, mu, mcov))
-
 
 ## ----maha----------------------------------------------------------------
 # Generating random vectors 
@@ -51,7 +47,6 @@ microbenchmark(maha(X, mu, mcov, ncores = 2),
                maha(X, mu, mcov),
                mahalanobis(X, mu, mcov))
 
-
 ## ----mixSim--------------------------------------------------------------
 set.seed(5135)
 N <- 10000
@@ -63,7 +58,6 @@ Cov2 <- matrix(c(1, -0.9, -0.9, 1), 2, 2)
 bin <- rbinom(N, 1, 0.5)
 
 X <- bin * rmvn(N, mu1, Cov1) + (!bin) * rmvn(N, mu2, Cov2)
-
 
 ## ----mixPlot-------------------------------------------------------------
 # Plotting
@@ -96,5 +90,4 @@ invisible( lapply(traj,
                     lines(input[ , 1], input[ , 2], col = 2, lwd = 1.5)
                     points(tail(input[ , 1]), tail(input[ , 2]))
            }))
-
 
