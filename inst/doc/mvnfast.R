@@ -7,6 +7,9 @@ library("microbenchmark")
 library("mvtnorm")
 library("mvnfast")
 library("MASS")
+# We might also need to turn off BLAS parallelism 
+library("RhpcBLASctl")
+blas_set_num_threads(1)
 
 N <- 10000
 d <- 20
