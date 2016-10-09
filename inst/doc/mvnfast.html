@@ -29,26 +29,28 @@ pre, code{font-size:90%;}
     <div class="page">
 <!--
 %\VignetteEngine{knitr::docco_linear}
-%\VignetteIndexEntry{synlik_vignette}
+%\VignetteIndexEntry{mvnfast_vignette}
 -->
 
 <h1>An Introduction to <strong>mvnfast</strong></h1>
 
 <h2>Introduction</h2>
 
-<p>The <code>mvn</code> R package provides computationally efficient tools related to the multivariate normal distribution. 
+<p>The <code>mvn</code> R package provides computationally efficient tools related to the multivariate normal and Student&#39;s t distributions. 
 The tools are generally faster than those provided by other packages, thanks to the use of C++ code through the 
 <code>Rcpp</code>\<code>RcppArmadillo</code> packages and parallelization through the <code>OpenMP</code> API. The most important functions are:</p>
 
 <ul>
 <li><code>rmvn()</code>: simulates multivariate normal random vectors.</li>
+<li><code>rmvt()</code>: simulates Student&#39;s t normal random vectors.</li>
 <li><code>dmvn()</code>: evaluates the probability density function of a multivariate normal distribution.<br/></li>
+<li><code>dmvt()</code>: evaluates the probability density function of a multivariate Student&#39;s t distribution.<br/></li>
 <li><code>maha()</code>: evaluates mahalanobis distances.</li>
 </ul>
 
 <p>In the following sections we will benchmark each function against equivalent functions provided by other packages, while in the final section we provide an example application.</p>
 
-<h2>Simulating multivariate normal random vectors</h2>
+<h2>Simulating multivariate normal or Student&#39;s t random vectors</h2>
 
 <p>Simulating multivariate normal random variables is an essential step in many Monte Carlo algorithms (such as MCMC or Particle Filters),
  hence this operations has to be as fast as possible. Here we compare the <code>rmvn</code> function with the equivalent function <code>rmvnorm</code> 
@@ -61,8 +63,9 @@ library(&quot;MASS&quot;)
 # We might also need to turn off BLAS parallelism 
 library(&quot;RhpcBLASctl&quot;)
 blas_set_num_threads(1)
+</code></pre>
 
-N &lt;- 10000
+<pre><code class="r">N &lt;- 10000
 d &lt;- 20
 
 # Creating mean and covariance matrix
@@ -78,26 +81,80 @@ microbenchmark(rmvn(N, mu, mcov, ncores = 2),
 
 <pre><code>## Unit: milliseconds
 ##                           expr       min        lq      mean    median
-##  rmvn(N, mu, mcov, ncores = 2)  2.962333  3.052043  4.232991  3.158812
-##              rmvn(N, mu, mcov)  5.054590  5.139264  7.313402  5.234082
-##           rmvnorm(N, mu, mcov) 15.738991 16.465214 20.679759 16.851513
-##           mvrnorm(N, mu, mcov) 15.357095 16.383270 21.587041 16.866174
+##  rmvn(N, mu, mcov, ncores = 2)  2.959034  3.053495  5.917454  3.114716
+##              rmvn(N, mu, mcov)  4.975366  5.034877  5.871961  5.110551
+##           rmvnorm(N, mu, mcov) 14.860792 15.640600 20.648821 16.108698
+##           mvrnorm(N, mu, mcov) 14.694174 15.562848 22.272562 15.953112
 ##         uq      max neval cld
-##   3.890893 30.91972   100 a  
-##   5.819171 33.88493   100  b 
-##  17.691762 45.88069   100   c
-##  17.767322 45.23293   100   c
+##   3.805988 30.14620   100  a 
+##   5.747448 31.46088   100  a 
+##  16.635351 42.33025   100   b
+##  28.578679 44.09116   100   b
 </code></pre>
 
 <p>In this example <code>rmvn</code> cuts the computational time, relative to the alternatives, even when a single core is used. This gain is attributable to several factors: the use of C++ code and efficient numerical algorithms to simulate the random variables. Parallelizing the computation on two cores gives another appreciable speed-up. To be fair, it is necessary to point out that <code>rmvnorm</code> and <code>mvrnorm</code> have many more safety check on the user&#39;s input than <code>rmvn</code>. This is true also for the functions described in the next sections.</p>
 
-<p>Finally, notice that this function does not use one of the Random Number Generators (RNGs) provided by R, but one 
-of the parallel cryptographic RNGs described in (Salmon et al., 2011) and available <a href="http://www.sitmo.com">here</a>. It is important to point out that this RNG can safely be used in parallel, without risk of collisions between parallel sequence of random numbers, as detailed in the above reference.</p>
+<p>Notice that this function does not use one of the Random Number Generators (RNGs) provided by R, but one  of the parallel cryptographic RNGs described in (Salmon et al., 2011) and available <a href="http://www.sitmo.com">here</a>. It is important to point out that this RNG can safely be used in parallel, without risk of collisions between parallel sequence of random numbers, as detailed in the above reference.</p>
 
-<h2>Evaluating the multivariate normal density</h2>
+<p>We get similar performance gains when we simulate multivariate Student&#39;s t random variables:</p>
+
+<pre><code class="r"># Here we have a conflict between namespaces
+microbenchmark(mvnfast::rmvt(N, mu, mcov, df = 3, ncores = 2),
+               mvnfast::rmvt(N, mu, mcov, df = 3),
+               mvtnorm::rmvt(N, delta = mu, sigma = mcov, df = 3))
+</code></pre>
+
+<pre><code>## Unit: milliseconds
+##                                                expr       min        lq
+##      mvnfast::rmvt(N, mu, mcov, df = 3, ncores = 2)  5.698514  5.784709
+##                  mvnfast::rmvt(N, mu, mcov, df = 3)  7.642374  7.750393
+##  mvtnorm::rmvt(N, delta = mu, sigma = mcov, df = 3) 18.840576 19.891478
+##       mean    median        uq      max neval cld
+##   9.161435  5.858322  6.796076 66.17224   100  a 
+##  12.402908  7.792827  8.706461 74.95396   100  a 
+##  33.200319 20.095630 21.372726 87.23506   100   b
+</code></pre>
+
+<p>When <code>d</code> and <code>N</code> are large, and <code>rmvn</code> or <code>rmvt</code> are called several times with the same arguments, it would make sense to create the matrix where to store the simulated random variable upfront. This can be done as follows:</p>
+
+<pre><code class="r">A &lt;- matrix(nrow = N, ncol = d)
+class(A) &lt;- &quot;numeric&quot; # This is important. We need the elements of A to be of class &quot;numeric&quot;.  
+
+rmvn(N, mu, mcov, A = A) 
+</code></pre>
+
+<p>Notice that here <code>rmvn</code> returns <code>NULL</code>, not the simulated random vectors! These can be found in the matrix provided by the user:</p>
+
+<pre><code class="r">A[1:2, 1:5]             
+</code></pre>
+
+<pre><code>##           [,1]      [,2]      [,3]      [,4]     [,5]
+## [1,] -3.312545 2.3832157 -2.093705 -1.354919 6.456977
+## [2,]  2.355897 0.9000686  7.269177  2.071836 0.832318
+</code></pre>
+
+<p>Pre-creating the matrix of random variables saves some more time: </p>
+
+<pre><code class="r">microbenchmark(rmvn(N, mu, mcov, ncores = 2, A = A),
+               rmvn(N, mu, mcov, ncores = 2), 
+               times = 200)
+</code></pre>
+
+<pre><code>## Unit: milliseconds
+##                                  expr      min       lq     mean   median
+##  rmvn(N, mu, mcov, ncores = 2, A = A) 2.691513 2.716387 2.733070 2.730586
+##         rmvn(N, mu, mcov, ncores = 2) 2.943113 2.980525 4.206146 2.996794
+##        uq       max neval cld
+##  2.744874  2.944403   200  a 
+##  4.030534 63.275404   200   b
+</code></pre>
+
+<p>Don&#39;t look at the median time here, the mean is much more affected by memory re-allocation. </p>
+
+<h2>Evaluating the multivariate normal and Student&#39;s t densities</h2>
 
 <p>Here we compare the <code>dmvn</code> function, which evaluates the multivariate normal density,  with the equivalent function <code>dmvtnorm</code> (from the <code>mvtnorm</code> package). 
-In particular we evaluate the density of \(10^4\) twenty-dimensional random vectors:</p>
+In particular we evaluate the log-density of \(10^4\) twenty-dimensional random vectors:</p>
 
 <pre><code class="r"># Generating random vectors 
 N &lt;- 10000
@@ -107,23 +164,40 @@ tmp &lt;- matrix(rnorm(d^2), d, d)
 mcov &lt;- tcrossprod(tmp, tmp)
 X &lt;- rmvn(N, mu, mcov)
 
-microbenchmark(dmvn(X, mu, mcov, ncores = 2),
-               dmvn(X, mu, mcov),
-               dmvnorm(X, mu, mcov))
+microbenchmark(dmvn(X, mu, mcov, ncores = 2, log = T),
+               dmvn(X, mu, mcov, log = T),
+               dmvnorm(X, mu, mcov, log = T), times = 500)
 </code></pre>
 
 <pre><code>## Unit: milliseconds
-##                           expr      min       lq     mean   median
-##  dmvn(X, mu, mcov, ncores = 2) 1.737373 1.833401 1.987410 1.886132
-##              dmvn(X, mu, mcov) 2.870420 2.987661 3.166377 3.080808
-##           dmvnorm(X, mu, mcov) 2.569005 2.710445 5.565932 3.204676
-##        uq       max neval cld
-##  2.011043  2.991912   100  a 
-##  3.212795  3.875458   100  ab
-##  3.856791 77.169832   100   b
+##                                    expr      min       lq     mean
+##  dmvn(X, mu, mcov, ncores = 2, log = T) 1.509826 1.538175 1.628526
+##              dmvn(X, mu, mcov, log = T) 2.607367 2.654905 2.740636
+##           dmvnorm(X, mu, mcov, log = T) 2.306930 2.373566 4.952162
+##    median       uq       max neval cld
+##  1.562739 1.717761  2.726618   500 a  
+##  2.688415 2.812136  3.829500   500  b 
+##  3.357403 3.400089 63.451343   500   c
 </code></pre>
 
-<p>Again, we get some speed-up using C++ code and some more from the parallelization.</p>
+<p>Again, we get some speed-up using C++ code and some more from the parallelization. We get similar results if we use a multivariate Student&#39;s t density:</p>
+
+<pre><code class="r"># We have a namespace conflict
+microbenchmark(mvnfast::dmvt(X, mu, mcov, df = 4, ncores = 2, log = T),
+               mvnfast::dmvt(X, mu, mcov, df = 4, log = T),
+               mvtnorm::dmvt(X, delta = mu, sigma = mcov, df = 4, log = T), times = 500)
+</code></pre>
+
+<pre><code>## Unit: milliseconds
+##                                                         expr      min
+##      mvnfast::dmvt(X, mu, mcov, df = 4, ncores = 2, log = T) 1.617523
+##                  mvnfast::dmvt(X, mu, mcov, df = 4, log = T) 2.808798
+##  mvtnorm::dmvt(X, delta = mu, sigma = mcov, df = 4, log = T) 2.541103
+##        lq     mean   median       uq       max neval cld
+##  1.651326 1.877272 1.686385 1.848161 61.186114   500 a  
+##  2.849976 2.974344 2.897671 3.032244  5.195101   500  b 
+##  2.603165 5.078103 3.570533 3.624700 65.014526   500   c
+</code></pre>
 
 <h2>Evaluating the Mahalanobis distance</h2>
 
@@ -145,13 +219,13 @@ microbenchmark(maha(X, mu, mcov, ncores = 2),
 
 <pre><code>## Unit: milliseconds
 ##                           expr      min       lq     mean   median
-##  maha(X, mu, mcov, ncores = 2) 1.410446 1.496472 1.754015 1.636257
-##              maha(X, mu, mcov) 2.553263 2.669778 2.908738 2.788488
-##       mahalanobis(X, mu, mcov) 2.728863 2.886309 5.231537 3.773625
+##  maha(X, mu, mcov, ncores = 2) 1.398661 1.416225 1.494973 1.438216
+##              maha(X, mu, mcov) 2.500366 2.530207 2.615703 2.552877
+##       mahalanobis(X, mu, mcov) 2.647349 2.707356 4.556859 3.648102
 ##        uq       max neval cld
-##  1.880036  2.879330   100  a 
-##  2.950655  5.755169   100  a 
-##  4.153083 84.590688   100   b
+##  1.604397  1.638903   100  a 
+##  2.694188  3.674887   100  a 
+##  3.704279 62.643901   100   b
 </code></pre>
 
 <p>The acceleration is similar to that obtained in the previous sections.</p>

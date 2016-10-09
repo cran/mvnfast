@@ -2,7 +2,7 @@
 library(knitr)
 opts_chunk$set(out.extra='style="display:block; margin: auto"', fig.align="center", tidy=FALSE)
 
-## ----rmvn----------------------------------------------------------------
+## ----pack, message=F, warning=F------------------------------------------
 library("microbenchmark")
 library("mvtnorm")
 library("mvnfast")
@@ -11,6 +11,7 @@ library("MASS")
 library("RhpcBLASctl")
 blas_set_num_threads(1)
 
+## ----rmvn----------------------------------------------------------------
 N <- 10000
 d <- 20
 
@@ -24,6 +25,26 @@ microbenchmark(rmvn(N, mu, mcov, ncores = 2),
                rmvnorm(N, mu, mcov),
                mvrnorm(N, mu, mcov))
 
+## ----rmvt----------------------------------------------------------------
+# Here we have a conflict between namespaces
+microbenchmark(mvnfast::rmvt(N, mu, mcov, df = 3, ncores = 2),
+               mvnfast::rmvt(N, mu, mcov, df = 3),
+               mvtnorm::rmvt(N, delta = mu, sigma = mcov, df = 3))
+
+## ----rmvnA---------------------------------------------------------------
+A <- matrix(nrow = N, ncol = d)
+class(A) <- "numeric" # This is important. We need the elements of A to be of class "numeric".  
+
+rmvn(N, mu, mcov, A = A) 
+
+## ----rmvnA1--------------------------------------------------------------
+A[1:2, 1:5]             
+
+## ----rmvnA2--------------------------------------------------------------
+microbenchmark(rmvn(N, mu, mcov, ncores = 2, A = A),
+               rmvn(N, mu, mcov, ncores = 2), 
+               times = 200)
+
 ## ----dmvn----------------------------------------------------------------
 # Generating random vectors 
 N <- 10000
@@ -33,9 +54,15 @@ tmp <- matrix(rnorm(d^2), d, d)
 mcov <- tcrossprod(tmp, tmp)
 X <- rmvn(N, mu, mcov)
 
-microbenchmark(dmvn(X, mu, mcov, ncores = 2),
-               dmvn(X, mu, mcov),
-               dmvnorm(X, mu, mcov))
+microbenchmark(dmvn(X, mu, mcov, ncores = 2, log = T),
+               dmvn(X, mu, mcov, log = T),
+               dmvnorm(X, mu, mcov, log = T), times = 500)
+
+## ----dmvt----------------------------------------------------------------
+# We have a namespace conflict
+microbenchmark(mvnfast::dmvt(X, mu, mcov, df = 4, ncores = 2, log = T),
+               mvnfast::dmvt(X, mu, mcov, df = 4, log = T),
+               mvtnorm::dmvt(X, delta = mu, sigma = mcov, df = 4, log = T), times = 500)
 
 ## ----maha----------------------------------------------------------------
 # Generating random vectors 
