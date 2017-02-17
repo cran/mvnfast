@@ -1,8 +1,8 @@
 Package: mvnfast
 Type: Package
 Title: Fast Multivariate Normal and Student's t Methods
-Version: 0.1.7
-Date: 2016-10-10
+Version: 0.2.0
+Date: 2017-02-17
 Author: Matteo Fasiolo, using the C++ parallel RNG of Thijs van den Berg and
     Ziggurat algorithm of Jens Maurer and Steven Watanabe (boost)
 Maintainer: Matteo Fasiolo <matteo.fasiolo@gmail.com>
@@ -18,8 +18,8 @@ Suggests: knitr, testthat, mvtnorm, microbenchmark, MASS, plyr,
         RhpcBLASctl
 LinkingTo: Rcpp, RcppArmadillo, BH
 VignetteBuilder: knitr
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1
 NeedsCompilation: yes
-Packaged: 2016-10-10 09:50:57 UTC; teo
+Packaged: 2017-02-17 20:27:14 UTC; teo
 Repository: CRAN
-Date/Publication: 2016-10-10 13:51:57
+Date/Publication: 2017-02-18 00:15:41

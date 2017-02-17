@@ -81,15 +81,15 @@ microbenchmark(rmvn(N, mu, mcov, ncores = 2),
 
 <pre><code>## Unit: milliseconds
 ##                           expr       min        lq      mean    median
-##  rmvn(N, mu, mcov, ncores = 2)  2.981300  3.107870  5.059316  3.545367
-##              rmvn(N, mu, mcov)  4.979493  5.196459  7.393358  5.738942
-##           rmvnorm(N, mu, mcov) 14.885085 16.079604 20.610021 17.129161
-##           mvrnorm(N, mu, mcov) 14.816559 16.340639 23.722008 17.251752
-##        uq      max neval cld
-##   4.02156 36.14515   100  a 
-##   6.23421 34.84351   100  a 
-##  18.22875 49.09561   100   b
-##  20.60067 50.34130   100   b
+##  rmvn(N, mu, mcov, ncores = 2)  2.898475  3.028725  5.597719  3.410570
+##              rmvn(N, mu, mcov)  4.810192  4.946226  6.342315  5.415242
+##           rmvnorm(N, mu, mcov) 15.075697 16.102871 22.289793 16.708962
+##           mvrnorm(N, mu, mcov) 14.846937 16.026077 24.173698 16.699599
+##         uq      max neval cld
+##   3.940261 35.18251   100  a 
+##   5.820625 37.71020   100  a 
+##  18.064287 51.48729   100   b
+##  42.166270 55.16909   100   b
 </code></pre>
 
 <p>In this example <code>rmvn</code> cuts the computational time, relative to the alternatives, even when a single core is used. This gain is attributable to several factors: the use of C++ code and efficient numerical algorithms to simulate the random variables. Parallelizing the computation on two cores gives another appreciable speed-up. To be fair, it is necessary to point out that <code>rmvnorm</code> and <code>mvrnorm</code> have many more safety check on the user&#39;s input than <code>rmvn</code>. This is true also for the functions described in the next sections.</p>
@@ -106,13 +106,13 @@ microbenchmark(mvnfast::rmvt(N, mu, mcov, df = 3, ncores = 2),
 
 <pre><code>## Unit: milliseconds
 ##                                                expr       min        lq
-##      mvnfast::rmvt(N, mu, mcov, df = 3, ncores = 2)  5.710130  5.866075
-##                  mvnfast::rmvt(N, mu, mcov, df = 3)  7.742501  8.196471
-##  mvtnorm::rmvt(N, delta = mu, sigma = mcov, df = 3) 19.104881 20.512527
-##      mean    median        uq      max neval cld
-##  11.07598  6.413546  7.091869 74.16660   100  a 
-##  11.86084  8.387935  9.069872 80.16018   100  a 
-##  36.81876 21.532911 24.021622 96.05436   100   b
+##      mvnfast::rmvt(N, mu, mcov, df = 3, ncores = 2)  5.889675  6.278573
+##                  mvnfast::rmvt(N, mu, mcov, df = 3)  8.009106  8.170333
+##  mvtnorm::rmvt(N, delta = mu, sigma = mcov, df = 3) 19.096286 20.456117
+##      mean    median        uq       max neval cld
+##  12.41912  6.981301  7.482693  89.27455   100  a 
+##  12.42678  9.081007  9.623562  85.65057   100  a 
+##  35.55394 21.798510 24.253274 101.30815   100   b
 </code></pre>
 
 <p>When <code>d</code> and <code>N</code> are large, and <code>rmvn</code> or <code>rmvt</code> are called several times with the same arguments, it would make sense to create the matrix where to store the simulated random variable upfront. This can be done as follows:</p>
@@ -128,9 +128,9 @@ rmvn(N, mu, mcov, A = A)
 <pre><code class="r">A[1:2, 1:5]             
 </code></pre>
 
-<pre><code>##           [,1]      [,2]     [,3]     [,4]     [,5]
-## [1,] -4.387674 0.4454278 6.278868 6.687291 1.404446
-## [2,]  1.623745 0.1355932 1.586403 1.597738 4.386961
+<pre><code>##          [,1]     [,2]     [,3]     [,4]      [,5]
+## [1,] 2.621417 1.250653 6.276235 5.654118 13.632100
+## [2,] 7.882625 1.431326 1.232163 2.820529  2.803018
 </code></pre>
 
 <p>Pre-creating the matrix of random variables saves some more time: </p>
@@ -142,11 +142,11 @@ rmvn(N, mu, mcov, A = A)
 
 <pre><code>## Unit: milliseconds
 ##                                  expr      min       lq     mean   median
-##  rmvn(N, mu, mcov, ncores = 2, A = A) 2.689836 2.727612 2.813070 2.753465
-##         rmvn(N, mu, mcov, ncores = 2) 2.952667 2.989935 4.363516 3.044220
+##  rmvn(N, mu, mcov, ncores = 2, A = A) 2.605242 2.641033 2.765544 2.675178
+##         rmvn(N, mu, mcov, ncores = 2) 2.854067 2.916154 4.386438 3.067153
 ##        uq       max neval cld
-##  2.821302  3.655459   200  a 
-##  4.049988 69.149360   200   b
+##  2.819408  3.667438   200  a 
+##  4.004929 71.131911   200   b
 </code></pre>
 
 <p>Don&#39;t look at the median time here, the mean is much more affected by memory re-allocation. </p>
@@ -171,13 +171,13 @@ microbenchmark(dmvn(X, mu, mcov, ncores = 2, log = T),
 
 <pre><code>## Unit: milliseconds
 ##                                    expr      min       lq     mean
-##  dmvn(X, mu, mcov, ncores = 2, log = T) 1.507746 1.566768 1.875487
-##              dmvn(X, mu, mcov, log = T) 2.608408 2.715063 2.876219
-##           dmvnorm(X, mu, mcov, log = T) 2.302602 2.434696 5.293464
+##  dmvn(X, mu, mcov, ncores = 2, log = T) 1.580086 1.659250 2.206805
+##              dmvn(X, mu, mcov, log = T) 2.681140 2.875031 3.180422
+##           dmvnorm(X, mu, mcov, log = T) 2.326221 2.535553 5.582572
 ##    median       uq       max neval cld
-##  1.678225 1.768591 72.003359   500  a 
-##  2.821767 2.938983  4.503155   500  a 
-##  3.393989 3.525119 78.650707   500   b
+##  1.802728 1.986381 75.774183   500  a 
+##  3.034956 3.340515  6.671343   500  a 
+##  3.414073 3.836296 81.165081   500   b
 </code></pre>
 
 <p>Again, we get some speed-up using C++ code and some more from the parallelization. We get similar results if we use a multivariate Student&#39;s t density:</p>
@@ -190,13 +190,13 @@ microbenchmark(mvnfast::dmvt(X, mu, mcov, df = 4, ncores = 2, log = T),
 
 <pre><code>## Unit: milliseconds
 ##                                                         expr      min
-##      mvnfast::dmvt(X, mu, mcov, df = 4, ncores = 2, log = T) 1.703606
-##                  mvnfast::dmvt(X, mu, mcov, df = 4, log = T) 2.816924
-##  mvtnorm::dmvt(X, delta = mu, sigma = mcov, df = 4, log = T) 2.568647
+##      mvnfast::dmvt(X, mu, mcov, df = 4, ncores = 2, log = T) 1.769784
+##                  mvnfast::dmvt(X, mu, mcov, df = 4, log = T) 2.899262
+##  mvtnorm::dmvt(X, delta = mu, sigma = mcov, df = 4, log = T) 2.565741
 ##        lq     mean   median       uq       max neval cld
-##  1.792667 2.121101 1.978263 2.208906  4.808635   500 a  
-##  2.980401 3.534592 3.119412 3.361081 82.148183   500  b 
-##  2.754834 5.540751 3.704994 4.103422 79.122825   500   c
+##  1.870723 2.053673 1.990358 2.090293  5.922307   500 a  
+##  3.079572 3.309611 3.216120 3.351971  5.936427   500  b 
+##  2.763745 6.218099 4.008344 4.294918 83.288077   500   c
 </code></pre>
 
 <h2>Evaluating the Mahalanobis distance</h2>
@@ -219,13 +219,13 @@ microbenchmark(maha(X, mu, mcov, ncores = 2),
 
 <pre><code>## Unit: milliseconds
 ##                           expr      min       lq     mean   median
-##  maha(X, mu, mcov, ncores = 2) 1.397028 1.427053 1.522263 1.467062
-##              maha(X, mu, mcov) 2.504157 2.560104 2.662598 2.600148
-##       mahalanobis(X, mu, mcov) 2.638775 2.741706 5.846996 3.665029
+##  maha(X, mu, mcov, ncores = 2) 1.460333 1.511454 1.658136 1.619147
+##              maha(X, mu, mcov) 2.623915 2.746698 2.907350 2.818961
+##       mahalanobis(X, mu, mcov) 2.671957 2.970613 5.845064 3.872397
 ##        uq       max neval cld
-##  1.611604  2.093516   100  a 
-##  2.730932  3.775964   100  a 
-##  3.737701 65.854169   100   b
+##  1.713244  2.369506   100  a 
+##  2.952926  3.855351   100  a 
+##  4.263406 80.308718   100   b
 </code></pre>
 
 <p>The acceleration is similar to that obtained in the previous sections.</p>
@@ -256,7 +256,10 @@ xvals &lt;- seq(min(X[ , 1]), max(X[ , 1]), length.out = np)
 yvals &lt;- seq(min(X[ , 2]), max(X[ , 2]), length.out = np)
 theGrid &lt;- expand.grid(xvals, yvals) 
 theGrid &lt;- as.matrix(theGrid)
-dens &lt;- 0.5 * dmvn(theGrid, mu1, Cov1) + 0.5 * dmvn(theGrid, mu2, Cov2)
+dens &lt;- dmixn(theGrid, 
+              mu = rbind(mu1, mu2), 
+              sigma = list(Cov1, Cov2), 
+              w = rep(1, 2)/2)
 plot(X[ , 1], X[ , 2], pch = &#39;.&#39;, lwd = 0.01, col = 3)
 contour(x = xvals, y = yvals, z = matrix(dens, np, np),
         levels = c(0.002, 0.01, 0.02, 0.04, 0.08, 0.15 ), add = TRUE, lwd = 2)

@@ -1,59 +1,68 @@
 ##############################################################
-#' Fast simulation of multivariate normal random variables
+#' Fast simulation of r.v.s from a mixture of multivariate normal densities
 #'
 #' @param n number of random vectors to be simulated.
-#' @param mu vector of length d, representing the mean.
-#' @param sigma covariance matrix (d x d). Alternatively is can be the cholesky decomposition
-#'              of the covariance. In that case \code{isChol} should be set to \code{TRUE}.
+#' @param mu an (m x d) matrix, where m is the number of mixture components.
+#' @param sigma as list of m covariance matrices (d x d) on for each mixture component. 
+#'              Alternatively it can be a list of m cholesky decomposition of the covariance. 
+#'              In that case \code{isChol} should be set to \code{TRUE}.
+#' @param w vector of length m, containing the weights of the mixture components.
 #' @param ncores Number of cores used. The parallelization will take place only if OpenMP is supported.
 #' @param isChol boolean set to true is \code{sigma} is the cholesky decomposition of the covariance matrix.
+#' @param retInd when set to \code{TRUE} an attribute called "index" will be added to the output matrix of random variables.
+#'               This is a vector specifying to which mixture components each random vector belongs. \code{FALSE} by default.
 #' @param A an (optional) numeric matrix of dimension (n x d), which will be used to store the output random variables.
 #'        It is useful when n and d are large and one wants to call \code{rmvn()} several times, without reallocating memory
 #'        for the whole matrix each time. NB: the element of \code{A} must be of class "numeric".
 #' @return If \code{A==NULL} (default) the output is an (n x d) matrix where the i-th row is the i-th simulated vector.
 #'         If \code{A!=NULL} then the random vector are store in \code{A}, which is provided by the user, and the function
-#'         returns \code{NULL}.
+#'         returns \code{NULL}. Notice that if \code{retInd==TRUE} an attribute called "index" will be added to A.
+#'         This is a vector specifying to which mixture components each random vector belongs.
 #' @details Notice that this function does not use one of the Random Number Generators (RNGs) provided by R, but one 
 #'          of the parallel cryptographic RNGs described in (Salmon et al., 2011). It is important to point out that this
 #'          RNG can safely be used in parallel, without risk of collisions between parallel sequence of random numbers.
 #'          The initialization of the RNG depends on R's seed, hence the \code{set.seed()} function can be used to 
 #'          obtain reproducible results. Notice though that changing \code{ncores} causes most of the generated numbers
 #'          to be different even if R's seed is the same (see example below). NB: at the moment the RNG does not work
-#'          properly on Solaris OS when \code{ncores>1}. Hence, \code{rmvn()} checks if the OS is Solaris and, if this the case, 
+#'          properly on Solaris OS when \code{ncores>1}. Hence, \code{rmixn()} checks if the OS is Solaris and, if this the case, 
 #'          it imposes \code{ncores==1}. 
 #' @author Matteo Fasiolo <matteo.fasiolo@@gmail.com>, C++ RNG engine by Thijs van den Berg <http://sitmo.com/>.
 #' @references  John K. Salmon, Mark A. Moraes, Ron O. Dror, and David E. Shaw (2011). Parallel Random Numbers: As Easy as 1, 2, 3.
 #'              D. E. Shaw Research, New York, NY 10036, USA.
 #' @examples
-#' d <- 5
-#' mu <- 1:d
+#' # Create mixture of two components
+#' mu <- matrix(rep(c(1, 2, 10, 20), 2), 2, 2, byrow = TRUE)
+#' sigma <- list(diag(c(1, 10)), matrix(c(1, -0.9, -0.9, 1), 2, 2))
+#' w <- c(0.1, 0.9)
 #' 
-#' # Creating covariance matrix
-#' tmp <- matrix(rnorm(d^2), d, d)
-#' mcov <- tcrossprod(tmp, tmp)
+#' # Simulate
+#' X <- rmixn(1e4, mu, sigma, w, retInd = TRUE)
+#' plot(X, pch = '.', col = attr(X, "index"))
+#' 
+#' # Simulate with fixed seed
+#' set.seed(414)
+#' rmixn(4, mu, sigma, w)
 #' 
 #' set.seed(414)
-#' rmvn(4, 1:d, mcov)
-#' 
-#' set.seed(414)
-#' rmvn(4, 1:d, mcov)
+#' rmixn(4, mu, sigma, w)
 #' 
 #' set.seed(414)  
-#' rmvn(4, 1:d, mcov, ncores = 2) # r.v. generated on the second core are different
+#' rmixn(4, mu, sigma, w, ncores = 2) # r.v. generated on the second core are different
 #' 
 #' ###### Here we create the matrix that will hold the simulated random variables upfront.
-#' A <- matrix(NA, 4, d)
+#' A <- matrix(NA, 4, 2)
 #' class(A) <- "numeric" # This is important. We need the elements of A to be of class "numeric". 
 #' 
 #' set.seed(414)
-#' rmvn(4, 1:d, mcov, ncores = 2, A = A) # This returns NULL ...
-#' A                                     # ... but the result is here
+#' rmixn(4, mu, sigma, w, ncores = 2, A = A) # This returns NULL ...
+#' A                                         # ... but the result is here
 #' 
-#' @export rmvn
-
-rmvn <- function(n, mu, sigma, ncores = 1, isChol = FALSE, A = NULL)
+#' @export rmixn
+#'
+rmixn <- function(n, mu, sigma, w, ncores = 1, isChol = FALSE, retInd = FALSE, A = NULL)
 {
-  d <- length(mu)
+  d <- ncol(mu)
+  m <- length(w)
   
   if( !is.matrix(sigma) ) sigma <- as.matrix( sigma )
   
@@ -76,13 +85,18 @@ rmvn <- function(n, mu, sigma, ncores = 1, isChol = FALSE, A = NULL)
       stop("class(A[1, 1]) != \"numeric\", to avoid this do class(A)<-\"numeric\".")
     }
   } 
+  
+  # Associate each sample with a mixture component
+  indV <- sample(0:(m-1), n, prob = w, replace = T)
 
-  .Call( "rmvnCpp", 
+  .Call( "rmixnCpp", 
          n_ = n, 
          mu_ = mu, 
-         sigma_ = sigma, 
+         sigma_ = sigma,
+         indV_ = indV,
          ncores_ = ncores,
          isChol_ = isChol, 
+         retInd_ = retInd,
          A_ = A )
   
   # Return a matrix if no storage was provided and NULL if it was provided.
