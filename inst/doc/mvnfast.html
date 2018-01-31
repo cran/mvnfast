@@ -208,7 +208,7 @@ hr {
 
 <p>title: &ldquo;An Introduction to mvnfast&rdquo;
 author: &ldquo;Matteo Fasiolo&rdquo;
-date: &ldquo;2017-12-23&rdquo;
+date: &ldquo;2018-01-31&rdquo;
 vignette: &gt;
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteIndexEntry{mvnfast_vignette}</p>
@@ -237,16 +237,26 @@ The tools are generally faster than those provided by other packages, thanks to 
  hence this operations has to be as fast as possible. Here we compare the <code>rmvn</code> function with the equivalent function <code>rmvnorm</code> 
 (from the <code>mvtnorm</code> package) and <code>mvrnorm</code> (from the <code>MASS</code> package). In particular, we simulate \(10^4\) twenty-dimensional random vectors:</p>
 
-<pre><code class="r">library(&quot;microbenchmark&quot;)
+<pre><code class="r"># microbenchmark does not work on all platforms, hence we need this small wrapper 
+microwrapper &lt;- function(..., times = 100L){
+  ok &lt;- &quot;microbenchmark&quot; %in% rownames(installed.packages())
+  if( ok ){ 
+    library(&quot;microbenchmark&quot;) 
+    microbenchmark(list = match.call(expand.dots = FALSE)$..., times = times)
+  }else{
+    message(&quot;microbenchmark package is not installed&quot;)
+    return( invisible(NULL) )
+  }
+}
+
 library(&quot;mvtnorm&quot;)
 library(&quot;mvnfast&quot;)
 library(&quot;MASS&quot;)
 # We might also need to turn off BLAS parallelism 
 library(&quot;RhpcBLASctl&quot;)
 blas_set_num_threads(1)
-</code></pre>
 
-<pre><code class="r">N &lt;- 10000
+N &lt;- 10000
 d &lt;- 20
 
 # Creating mean and covariance matrix
@@ -254,23 +264,23 @@ mu &lt;- 1:d
 tmp &lt;- matrix(rnorm(d^2), d, d)
 mcov &lt;- tcrossprod(tmp, tmp)
 
-microbenchmark(rmvn(N, mu, mcov, ncores = 2),
-               rmvn(N, mu, mcov),
-               rmvnorm(N, mu, mcov),
-               mvrnorm(N, mu, mcov))
+microwrapper(rmvn(N, mu, mcov, ncores = 2),
+             rmvn(N, mu, mcov),
+             rmvnorm(N, mu, mcov),
+             mvrnorm(N, mu, mcov))
 </code></pre>
 
 <pre><code>## Unit: milliseconds
 ##                           expr       min        lq      mean    median
-##  rmvn(N, mu, mcov, ncores = 2)  2.869343  2.951836  3.964180  3.009329
-##              rmvn(N, mu, mcov)  5.116576  5.198669  7.404826  5.304450
-##           rmvnorm(N, mu, mcov) 15.083198 16.123729 22.379661 16.657447
-##           mvrnorm(N, mu, mcov) 14.724016 15.617562 19.670027 15.859236
+##  rmvn(N, mu, mcov, ncores = 2)  2.930394  3.106098  4.658409  3.681321
+##              rmvn(N, mu, mcov)  5.268094  5.591944  7.661129  6.061932
+##           rmvnorm(N, mu, mcov) 15.825385 17.166542 19.963266 17.842303
+##           mvrnorm(N, mu, mcov) 15.480085 16.813702 22.345682 17.472055
 ##         uq      max neval cld
-##   3.842818 38.13823   100  a 
-##   6.097371 50.07633   100  a 
-##  17.366874 51.74506   100   b
-##  16.521721 51.22644   100   b
+##   4.238492 41.27135   100  a 
+##   6.573688 50.42992   100  a 
+##  18.670485 55.81538   100   b
+##  18.370089 59.76614   100   b
 </code></pre>
 
 <p>In this example <code>rmvn</code> cuts the computational time, relative to the alternatives, even when a single core is used. This gain is attributable to several factors: the use of C++ code and efficient numerical algorithms to simulate the random variables. Parallelizing the computation on two cores gives another appreciable speed-up. To be fair, it is necessary to point out that <code>rmvnorm</code> and <code>mvrnorm</code> have many more safety check on the user&#39;s input than <code>rmvn</code>. This is true also for the functions described in the next sections.</p>
@@ -280,20 +290,20 @@ microbenchmark(rmvn(N, mu, mcov, ncores = 2),
 <p>We get similar performance gains when we simulate multivariate Student&#39;s t random variables:</p>
 
 <pre><code class="r"># Here we have a conflict between namespaces
-microbenchmark(mvnfast::rmvt(N, mu, mcov, df = 3, ncores = 2),
-               mvnfast::rmvt(N, mu, mcov, df = 3),
-               mvtnorm::rmvt(N, delta = mu, sigma = mcov, df = 3))
+microwrapper(mvnfast::rmvt(N, mu, mcov, df = 3, ncores = 2),
+             mvnfast::rmvt(N, mu, mcov, df = 3),
+             mvtnorm::rmvt(N, delta = mu, sigma = mcov, df = 3))
 </code></pre>
 
 <pre><code>## Unit: milliseconds
 ##                                                expr       min        lq
-##      mvnfast::rmvt(N, mu, mcov, df = 3, ncores = 2)  5.754565  5.839437
-##                  mvnfast::rmvt(N, mu, mcov, df = 3)  8.020242  8.101024
-##  mvtnorm::rmvt(N, delta = mu, sigma = mcov, df = 3) 18.270408 19.520069
+##      mvnfast::rmvt(N, mu, mcov, df = 3, ncores = 2)  5.888642  6.260741
+##                  mvnfast::rmvt(N, mu, mcov, df = 3)  8.135800  8.590252
+##  mvtnorm::rmvt(N, delta = mu, sigma = mcov, df = 3) 19.548254 21.746119
 ##       mean    median        uq       max neval cld
-##   9.171869  5.914170  6.932162  85.33542   100  a 
-##   9.369743  8.214005  9.250888  79.09919   100  a 
-##  28.326863 19.867925 20.914040 101.13255   100   b
+##   9.528331  6.671501  7.304968 100.81290   100  a 
+##  10.252812  9.111693 10.055581  91.35741   100  a 
+##  31.037393 22.357312 23.722494 117.75248   100   b
 </code></pre>
 
 <p>When <code>d</code> and <code>N</code> are large, and <code>rmvn</code> or <code>rmvt</code> are called several times with the same arguments, it would make sense to create the matrix where to store the simulated random variable upfront. This can be done as follows:</p>
@@ -309,25 +319,25 @@ rmvn(N, mu, mcov, A = A)
 <pre><code class="r">A[1:2, 1:5]             
 </code></pre>
 
-<pre><code>##           [,1]      [,2]      [,3]     [,4]      [,5]
-## [1,] -2.513917  1.155618 4.9239162 8.161547 -4.154014
-## [2,]  3.508160 -2.127151 0.9363504 5.214487 15.911238
+<pre><code>##           [,1]      [,2]     [,3]      [,4]      [,5]
+## [1,] 2.9321489  3.325618 5.182709  2.446633 -3.315632
+## [2,] 0.6087099 -1.207436 4.111582 12.228720  1.241457
 </code></pre>
 
 <p>Pre-creating the matrix of random variables saves some more time: </p>
 
-<pre><code class="r">microbenchmark(rmvn(N, mu, mcov, ncores = 2, A = A),
-               rmvn(N, mu, mcov, ncores = 2), 
-               times = 200)
+<pre><code class="r">microwrapper(rmvn(N, mu, mcov, ncores = 2, A = A),
+             rmvn(N, mu, mcov, ncores = 2), 
+             times = 200)
 </code></pre>
 
 <pre><code>## Unit: milliseconds
 ##                                  expr      min       lq     mean   median
-##  rmvn(N, mu, mcov, ncores = 2, A = A) 2.613869 2.628497 2.648726 2.644245
-##         rmvn(N, mu, mcov, ncores = 2) 2.856497 2.886709 3.927323 2.905606
+##  rmvn(N, mu, mcov, ncores = 2, A = A) 2.635462 2.780391 2.940179 2.841392
+##         rmvn(N, mu, mcov, ncores = 2) 2.913616 3.094768 4.467015 3.287878
 ##        uq       max neval cld
-##  2.660891  2.751751   200  a 
-##  3.181075 75.669056   200   b
+##  3.010073  3.847393   200  a 
+##  4.158607 86.622709   200   b
 </code></pre>
 
 <p>Don&#39;t look at the median time here, the mean is much more affected by memory re-allocation. </p>
@@ -345,39 +355,39 @@ tmp &lt;- matrix(rnorm(d^2), d, d)
 mcov &lt;- tcrossprod(tmp, tmp)
 X &lt;- rmvn(N, mu, mcov)
 
-microbenchmark(dmvn(X, mu, mcov, ncores = 2, log = T),
-               dmvn(X, mu, mcov, log = T),
-               dmvnorm(X, mu, mcov, log = T), times = 500)
+microwrapper(dmvn(X, mu, mcov, ncores = 2, log = T),
+             dmvn(X, mu, mcov, log = T),
+             dmvnorm(X, mu, mcov, log = T), times = 500)
 </code></pre>
 
 <pre><code>## Unit: milliseconds
 ##                                    expr      min       lq     mean
-##  dmvn(X, mu, mcov, ncores = 2, log = T) 1.553744 1.602327 1.681106
-##              dmvn(X, mu, mcov, log = T) 2.664310 2.765360 2.847991
-##           dmvnorm(X, mu, mcov, log = T) 2.400358 2.450243 4.896150
+##  dmvn(X, mu, mcov, ncores = 2, log = T) 1.589510 1.714323 1.998003
+##              dmvn(X, mu, mcov, log = T) 2.739935 2.979354 3.200787
+##           dmvnorm(X, mu, mcov, log = T) 2.405630 2.565850 4.686375
 ##    median       uq       max neval cld
-##  1.628550 1.778469  2.952421   500 a  
-##  2.822249 2.917674  3.900135   500  b 
-##  2.557461 3.602018 75.144144   500   c
+##  1.871536 2.103073  3.670705   500 a  
+##  3.098284 3.304666  4.660029   500  b 
+##  3.301010 3.733909 92.348180   500   c
 </code></pre>
 
 <p>Again, we get some speed-up using C++ code and some more from the parallelization. We get similar results if we use a multivariate Student&#39;s t density:</p>
 
 <pre><code class="r"># We have a namespace conflict
-microbenchmark(mvnfast::dmvt(X, mu, mcov, df = 4, ncores = 2, log = T),
-               mvnfast::dmvt(X, mu, mcov, df = 4, log = T),
-               mvtnorm::dmvt(X, delta = mu, sigma = mcov, df = 4, log = T), times = 500)
+microwrapper(mvnfast::dmvt(X, mu, mcov, df = 4, ncores = 2, log = T),
+             mvnfast::dmvt(X, mu, mcov, df = 4, log = T),
+             mvtnorm::dmvt(X, delta = mu, sigma = mcov, df = 4, log = T), times = 500)
 </code></pre>
 
 <pre><code>## Unit: milliseconds
 ##                                                         expr      min
-##      mvnfast::dmvt(X, mu, mcov, df = 4, ncores = 2, log = T) 1.735921
-##                  mvnfast::dmvt(X, mu, mcov, df = 4, log = T) 2.880508
-##  mvtnorm::dmvt(X, delta = mu, sigma = mcov, df = 4, log = T) 2.641131
+##      mvnfast::dmvt(X, mu, mcov, df = 4, ncores = 2, log = T) 1.750620
+##                  mvnfast::dmvt(X, mu, mcov, df = 4, log = T) 2.915687
+##  mvtnorm::dmvt(X, delta = mu, sigma = mcov, df = 4, log = T) 2.638534
 ##        lq     mean   median       uq       max neval cld
-##  1.805730 1.891945 1.855004 2.007636  3.115382   500 a  
-##  3.028681 3.119221 3.091241 3.203544  4.911419   500  b 
-##  2.683805 4.375662 2.764473 3.974187 76.237174   500   c
+##  1.944891 2.239928 2.095909 2.416931  4.093267   500 a  
+##  3.134727 3.378871 3.280737 3.511854  7.043100   500  b 
+##  2.807789 5.007162 3.599672 4.100619 90.510063   500   c
 </code></pre>
 
 <h2>Evaluating the Mahalanobis distance</h2>
@@ -393,20 +403,20 @@ tmp &lt;- matrix(rnorm(d^2), d, d)
 mcov &lt;- tcrossprod(tmp, tmp)
 X &lt;- rmvn(N, mu, mcov)
 
-microbenchmark(maha(X, mu, mcov, ncores = 2),
-               maha(X, mu, mcov),
-               mahalanobis(X, mu, mcov))
+microwrapper(maha(X, mu, mcov, ncores = 2),
+             maha(X, mu, mcov),
+             mahalanobis(X, mu, mcov))
 </code></pre>
 
 <pre><code>## Unit: milliseconds
 ##                           expr      min       lq     mean   median
-##  maha(X, mu, mcov, ncores = 2) 1.445606 1.480913 1.546898 1.500379
-##              maha(X, mu, mcov) 2.564499 2.646450 2.740035 2.701891
-##       mahalanobis(X, mu, mcov) 2.691467 2.808553 4.817008 3.406626
+##  maha(X, mu, mcov, ncores = 2) 1.445650 1.494736 1.671679 1.647555
+##              maha(X, mu, mcov) 2.627577 2.744527 2.973638 2.895790
+##       mahalanobis(X, mu, mcov) 2.763080 2.894032 5.446599 3.865827
 ##        uq       max neval cld
-##  1.657132  1.726759   100  a 
-##  2.819453  3.673934   100  a 
-##  3.953476 75.355109   100   b
+##  1.736326  2.819599   100  a 
+##  3.116542  3.848435   100  a 
+##  4.266131 85.384659   100   b
 </code></pre>
 
 <p>The acceleration is similar to that obtained in the previous sections.</p>

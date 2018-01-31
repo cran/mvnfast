@@ -1,11 +1,11 @@
 36073b4ac595bfbaea717ad0689910e9 *ChangeLog
-f12a1ecea45b2dd189252c8f21c1b7f7 *DESCRIPTION
+98f11affd7d0ff6e2c62a72fb3587f5b *DESCRIPTION
 b21b8806c0c050f3727b0454abd6646d *NAMESPACE
 a69ef94c63810c8af424ecaad8ccb0e7 *R/dmixn.R
 72168a28c27dcc34fa1408cd0daddd9f *R/dmixt.R
-0c42220ee376066d91f9f914ce154526 *R/dmvn.R
+c4e3a660a1cae12102a50ef7b9a6b6fe *R/dmvn.R
 af00d7a5c3bdbea216436b4511f6580a *R/dmvt.R
-3714e6bf6bbf8578c6718d325d627b64 *R/maha.R
+1a892732d424180675fe3d67a82181de *R/maha.R
 4e2a0950585072c46ef42ddb9c20d477 *R/ms.R
 34b068aff24dba97351d0ed8659fec79 *R/rmixn.R
 d9f4efe815c8d97815feed83de97eaeb *R/rmixt.R
@@ -14,9 +14,9 @@ c20921418c2c85b99e65f303e227847f *R/rmvt.R
 e8129850b6e4bd0d3c0adfd1aa9faade *build/vignette.rds
 674ac7fb24133c852fb9df1190863588 *inst/CITATION
 ede8099c2bc2392a4c61806a20b9b375 *inst/COPYRIGHTS
-09da6da68ca2f9549a1584511b22a1de *inst/doc/mvnfast.R
-01ea3fb9234d48ee318dfe01cff5465f *inst/doc/mvnfast.Rmd
-15b6f644a8ffd34b4ae5764944a52094 *inst/doc/mvnfast.html
+4ee8aa775f9f031b58440b963a452ae3 *inst/doc/mvnfast.R
+e84089f2bc1e7836f68f709d46d3a169 *inst/doc/mvnfast.Rmd
+88f9e3f80ee699a0a2434e85463014e7 *inst/doc/mvnfast.html
 0a4b3b13fe3dc4f86b52b6054409f871 *inst/tests/test-dmixt.R
 dee4f3d22bef4042cd1a717a5d09e83c *inst/tests/test-dmvn.R
 0e9dfb82212be33c1181371423130a46 *inst/tests/test-dmvt.R
@@ -27,9 +27,9 @@ b130a19b25b8ef4593793f407573aaf4 *inst/tests/test-rmixn.R
 bea4e4cf92eeb511ebc1e47a031f5f27 *inst/tests/test-rmvt.R
 764bd72b20060fb662ea0b8ba169abef *man/dmixn.Rd
 703f497c42f1a6d9c901ee1e319516b0 *man/dmixt.Rd
-c89589ebb88ed572fd8d26c608670230 *man/dmvn.Rd
+82968a1a30973b3ea45adb70f3ede4e7 *man/dmvn.Rd
 93006a978cc584bfe6005f46ed13474e *man/dmvt.Rd
-603723a48ea98c9da4041800068e62d3 *man/maha.Rd
+8fdcca33385b17ed322d7230611d6f41 *man/maha.Rd
 6186c9672e99b1929f7e1184974cd2db *man/ms.Rd
 eb6a34ebd03684b95bd7c684498b8a83 *man/rmixn.Rd
 8eed8c66548cdfe3ea99efb6f191eb22 *man/rmixt.Rd
@@ -49,4 +49,4 @@ a253bed1dc4eb2b17f913c3a0687fc54 *src/mvnfast.h
 6063fc86444b6d0cf14c56fee668dd4f *src/rmvtCpp.cpp
 7e39c4a3020c56f9f363e8d8c5267811 *src/sitmo/sitmo.hpp
 d607384e92d6b802dba93bfda2b7cc76 *tests/test-all.R
-01ea3fb9234d48ee318dfe01cff5465f *vignettes/mvnfast.Rmd
+e84089f2bc1e7836f68f709d46d3a169 *vignettes/mvnfast.Rmd

@@ -3,7 +3,18 @@ library(knitr)
 opts_chunk$set(out.extra='style="display:block; margin: auto"', fig.align="center", tidy=FALSE)
 
 ## ----pack, message=F, warning=F------------------------------------------
-library("microbenchmark")
+# microbenchmark does not work on all platforms, hence we need this small wrapper 
+microwrapper <- function(..., times = 100L){
+  ok <- "microbenchmark" %in% rownames(installed.packages())
+  if( ok ){ 
+    library("microbenchmark") 
+    microbenchmark(list = match.call(expand.dots = FALSE)$..., times = times)
+  }else{
+    message("microbenchmark package is not installed")
+    return( invisible(NULL) )
+  }
+}
+
 library("mvtnorm")
 library("mvnfast")
 library("MASS")
@@ -11,7 +22,6 @@ library("MASS")
 library("RhpcBLASctl")
 blas_set_num_threads(1)
 
-## ----rmvn----------------------------------------------------------------
 N <- 10000
 d <- 20
 
@@ -20,16 +30,16 @@ mu <- 1:d
 tmp <- matrix(rnorm(d^2), d, d)
 mcov <- tcrossprod(tmp, tmp)
 
-microbenchmark(rmvn(N, mu, mcov, ncores = 2),
-               rmvn(N, mu, mcov),
-               rmvnorm(N, mu, mcov),
-               mvrnorm(N, mu, mcov))
+microwrapper(rmvn(N, mu, mcov, ncores = 2),
+             rmvn(N, mu, mcov),
+             rmvnorm(N, mu, mcov),
+             mvrnorm(N, mu, mcov))
 
 ## ----rmvt----------------------------------------------------------------
 # Here we have a conflict between namespaces
-microbenchmark(mvnfast::rmvt(N, mu, mcov, df = 3, ncores = 2),
-               mvnfast::rmvt(N, mu, mcov, df = 3),
-               mvtnorm::rmvt(N, delta = mu, sigma = mcov, df = 3))
+microwrapper(mvnfast::rmvt(N, mu, mcov, df = 3, ncores = 2),
+             mvnfast::rmvt(N, mu, mcov, df = 3),
+             mvtnorm::rmvt(N, delta = mu, sigma = mcov, df = 3))
 
 ## ----rmvnA---------------------------------------------------------------
 A <- matrix(nrow = N, ncol = d)
@@ -41,9 +51,9 @@ rmvn(N, mu, mcov, A = A)
 A[1:2, 1:5]             
 
 ## ----rmvnA2--------------------------------------------------------------
-microbenchmark(rmvn(N, mu, mcov, ncores = 2, A = A),
-               rmvn(N, mu, mcov, ncores = 2), 
-               times = 200)
+microwrapper(rmvn(N, mu, mcov, ncores = 2, A = A),
+             rmvn(N, mu, mcov, ncores = 2), 
+             times = 200)
 
 ## ----dmvn----------------------------------------------------------------
 # Generating random vectors 
@@ -54,15 +64,15 @@ tmp <- matrix(rnorm(d^2), d, d)
 mcov <- tcrossprod(tmp, tmp)
 X <- rmvn(N, mu, mcov)
 
-microbenchmark(dmvn(X, mu, mcov, ncores = 2, log = T),
-               dmvn(X, mu, mcov, log = T),
-               dmvnorm(X, mu, mcov, log = T), times = 500)
+microwrapper(dmvn(X, mu, mcov, ncores = 2, log = T),
+             dmvn(X, mu, mcov, log = T),
+             dmvnorm(X, mu, mcov, log = T), times = 500)
 
 ## ----dmvt----------------------------------------------------------------
 # We have a namespace conflict
-microbenchmark(mvnfast::dmvt(X, mu, mcov, df = 4, ncores = 2, log = T),
-               mvnfast::dmvt(X, mu, mcov, df = 4, log = T),
-               mvtnorm::dmvt(X, delta = mu, sigma = mcov, df = 4, log = T), times = 500)
+microwrapper(mvnfast::dmvt(X, mu, mcov, df = 4, ncores = 2, log = T),
+             mvnfast::dmvt(X, mu, mcov, df = 4, log = T),
+             mvtnorm::dmvt(X, delta = mu, sigma = mcov, df = 4, log = T), times = 500)
 
 ## ----maha----------------------------------------------------------------
 # Generating random vectors 
@@ -73,9 +83,9 @@ tmp <- matrix(rnorm(d^2), d, d)
 mcov <- tcrossprod(tmp, tmp)
 X <- rmvn(N, mu, mcov)
 
-microbenchmark(maha(X, mu, mcov, ncores = 2),
-               maha(X, mu, mcov),
-               mahalanobis(X, mu, mcov))
+microwrapper(maha(X, mu, mcov, ncores = 2),
+             maha(X, mu, mcov),
+             mahalanobis(X, mu, mcov))
 
 ## ----mixSim--------------------------------------------------------------
 set.seed(5135)
