@@ -1,8 +1,8 @@
-## ----setup, include=FALSE------------------------------------------------
+## ----setup, include=FALSE-----------------------------------------------------
 library(knitr)
 opts_chunk$set(out.extra='style="display:block; margin: auto"', fig.align="center", tidy=FALSE)
 
-## ----pack, message=F, warning=F------------------------------------------
+## ----pack, message=F, warning=F-----------------------------------------------
 # microbenchmark does not work on all platforms, hence we need this small wrapper 
 microwrapper <- function(..., times = 100L){
   ok <- "microbenchmark" %in% rownames(installed.packages())
@@ -35,27 +35,27 @@ microwrapper(rmvn(N, mu, mcov, ncores = 2),
              rmvnorm(N, mu, mcov),
              mvrnorm(N, mu, mcov))
 
-## ----rmvt----------------------------------------------------------------
+## ----rmvt---------------------------------------------------------------------
 # Here we have a conflict between namespaces
 microwrapper(mvnfast::rmvt(N, mu, mcov, df = 3, ncores = 2),
              mvnfast::rmvt(N, mu, mcov, df = 3),
              mvtnorm::rmvt(N, delta = mu, sigma = mcov, df = 3))
 
-## ----rmvnA---------------------------------------------------------------
+## ----rmvnA--------------------------------------------------------------------
 A <- matrix(nrow = N, ncol = d)
 class(A) <- "numeric" # This is important. We need the elements of A to be of class "numeric".  
 
 rmvn(N, mu, mcov, A = A) 
 
-## ----rmvnA1--------------------------------------------------------------
+## ----rmvnA1-------------------------------------------------------------------
 A[1:2, 1:5]             
 
-## ----rmvnA2--------------------------------------------------------------
+## ----rmvnA2-------------------------------------------------------------------
 microwrapper(rmvn(N, mu, mcov, ncores = 2, A = A),
              rmvn(N, mu, mcov, ncores = 2), 
              times = 200)
 
-## ----dmvn----------------------------------------------------------------
+## ----dmvn---------------------------------------------------------------------
 # Generating random vectors 
 N <- 10000
 d <- 20
@@ -68,13 +68,13 @@ microwrapper(dmvn(X, mu, mcov, ncores = 2, log = T),
              dmvn(X, mu, mcov, log = T),
              dmvnorm(X, mu, mcov, log = T), times = 500)
 
-## ----dmvt----------------------------------------------------------------
+## ----dmvt---------------------------------------------------------------------
 # We have a namespace conflict
 microwrapper(mvnfast::dmvt(X, mu, mcov, df = 4, ncores = 2, log = T),
              mvnfast::dmvt(X, mu, mcov, df = 4, log = T),
              mvtnorm::dmvt(X, delta = mu, sigma = mcov, df = 4, log = T), times = 500)
 
-## ----maha----------------------------------------------------------------
+## ----maha---------------------------------------------------------------------
 # Generating random vectors 
 N <- 10000
 d <- 20
@@ -87,7 +87,7 @@ microwrapper(maha(X, mu, mcov, ncores = 2),
              maha(X, mu, mcov),
              mahalanobis(X, mu, mcov))
 
-## ----mixSim--------------------------------------------------------------
+## ----mixSim-------------------------------------------------------------------
 set.seed(5135)
 N <- 10000
 d <- 2
@@ -99,7 +99,7 @@ bin <- rbinom(N, 1, 0.5)
 
 X <- bin * rmvn(N, mu1, Cov1) + (!bin) * rmvn(N, mu2, Cov2)
 
-## ----mixPlot-------------------------------------------------------------
+## ----mixPlot------------------------------------------------------------------
 # Plotting
 np <- 100
 xvals <- seq(min(X[ , 1]), max(X[ , 1]), length.out = np)
